@@ -9,7 +9,6 @@ import 'package:rum_sdk/src/transport/batch_transport.dart';
 import 'package:rum_sdk/src/transport/rum_base_transport.dart';
 import 'package:rum_sdk/src/util/generate_session.dart';
 
-
 Timer? timer;
 
 typedef AppRunner = FutureOr<void> Function();
@@ -26,7 +25,7 @@ class RumFlutter {
   }
 
   @visibleForTesting
-  static set instance(RumFlutter instance)=> _instance = instance;
+  static set instance(RumFlutter instance) => _instance = instance;
 
   RumConfig? config;
   List<BaseTransport> _transports = [];
@@ -39,7 +38,7 @@ class RumFlutter {
         "device_version": Platform.operatingSystemVersion,
         "dart_version": Platform.version
       }),
-      sdk: Sdk("rum-flutter", "0.0.1", []),
+      sdk: Sdk("rum-flutter", "1.3.5", []),
       app: App("", "", ""),
       view: ViewMeta("default"));
 
@@ -58,29 +57,31 @@ class RumFlutter {
   set transports(List<BaseTransport> transports) {
     _transports = transports;
   }
+
   @visibleForTesting
   set batchTransport(BatchTransport? batchTransport) {
     _batchTransport = batchTransport;
   }
 
-  Future<void> init(
-      {required RumConfig optionsConfiguration}) async {
+  Future<void> init({required RumConfig optionsConfiguration}) async {
     _nativeChannel ??= RumNativeMethods();
     config = optionsConfiguration;
-    _batchTransport = _batchTransport ?? BatchTransport(
-        payload: Payload(meta),
-        batchConfig: config?.batchConfig ?? BatchConfig(),
-        transports: _transports);
+    _batchTransport = _batchTransport ??
+        BatchTransport(
+            payload: Payload(meta),
+            batchConfig: config?.batchConfig ?? BatchConfig(),
+            transports: _transports);
 
-    if(config?.transports == null){
+    if (config?.transports == null) {
       RumFlutter()._transports.add(
-          RUMTransport(collectorUrl: optionsConfiguration.collectorUrl ?? '',
-            apiKey: optionsConfiguration.apiKey,
-            maxBufferLimit: config?.maxBufferLimit ,
-          )
-      );
-    }
-    else{
+            RUMTransport(
+              collectorUrl: optionsConfiguration.collectorUrl ?? '',
+              apiKey: optionsConfiguration.apiKey,
+              maxBufferLimit: config?.maxBufferLimit,
+              sessionId: meta.session?.id,
+            ),
+          );
+    } else {
       RumFlutter()._transports.addAll(config?.transports ?? []);
     }
     _instance.ignoreUrls = optionsConfiguration.ignoreUrls ?? [];
@@ -90,10 +91,14 @@ class RumFlutter {
         appVersion: optionsConfiguration.appVersion == null
             ? "1.0.0"
             : optionsConfiguration.appVersion!);
-    if(config?.enableCrashReporting == true){
-      _instance.enableCrashReporter(app: _instance.meta.app!, apiKey: optionsConfiguration.apiKey, collectorUrl: optionsConfiguration.collectorUrl ?? "" );
+    if (config?.enableCrashReporting == true) {
+      _instance.enableCrashReporter(
+        app: _instance.meta.app!,
+        apiKey: optionsConfiguration.apiKey,
+        collectorUrl: optionsConfiguration.collectorUrl ?? "",
+      );
     }
-    if (Platform.isAndroid || Platform.isIOS){
+    if (Platform.isAndroid || Platform.isIOS) {
       NativeIntegration.instance.init(
           memusage: optionsConfiguration.memoryUsageVitals,
           cpuusage: optionsConfiguration.cpuUsageVitals,
@@ -106,7 +111,6 @@ class RumFlutter {
       NativeIntegration.instance.getAppStart();
     });
     WidgetsBinding.instance.addObserver(RumWidgetsBindingObserver());
-
   }
 
   Future<void> runApp(
@@ -151,7 +155,9 @@ class RumFlutter {
       {String? level,
       Map<String, dynamic>? context,
       Map<String, dynamic>? trace}) {
-    _batchTransport?.addLog(RumLog(message, level: level, context: context, trace: trace));
+    _batchTransport?.addLog(
+      RumLog(message, level: level, context: context, trace: trace),
+    );
     return null;
   }
 
@@ -159,12 +165,14 @@ class RumFlutter {
       {required type,
       required value,
       StackTrace? stacktrace,
-      Map<String,String>? context}) {
+      Map<String, String>? context}) {
     Map<String, dynamic> parsedStackTrace = {};
     if (stacktrace != null) {
       parsedStackTrace = {"frames": RumException.stackTraceParse(stacktrace)};
     }
-    _batchTransport?.addExceptions(RumException(type, value, parsedStackTrace, context: context));
+    _batchTransport?.addExceptions(
+      RumException(type, value, parsedStackTrace, context: context),
+    );
     return null;
   }
 
@@ -174,7 +182,7 @@ class RumFlutter {
   }
 
   void markEventStart(String key, String name) {
-     var eventStartTime = DateTime.now().millisecondsSinceEpoch;
+    var eventStartTime = DateTime.now().millisecondsSinceEpoch;
     eventMark[key] = {
       "eventName": name,
       "eventStartTime": eventStartTime,
@@ -204,26 +212,30 @@ class RumFlutter {
     return null;
   }
 
-  Future<void>? enableCrashReporter({required App app, required String apiKey, required String collectorUrl} ) async  {
+  Future<void>? enableCrashReporter({
+    required App app,
+    required String apiKey,
+    required String collectorUrl,
+  }) async {
     Map<String, dynamic> metadata = meta.toJson();
     metadata["app"] = app.toJson();
     metadata["apiKey"] = apiKey;
     metadata["collectorUrl"] = collectorUrl;
-    if(Platform.isIOS){
+    if (Platform.isIOS) {
       _nativeChannel?.enableCrashReporter(metadata);
     }
-    if(Platform.isAndroid){
-      List<String>? crashReports =  await _nativeChannel?.getCrashReport();
-      if(crashReports != null){
-        for(var crashInfo in crashReports){
+    if (Platform.isAndroid) {
+      List<String>? crashReports = await _nativeChannel?.getCrashReport();
+      if (crashReports != null) {
+        for (var crashInfo in crashReports) {
           final crashInfoJson = json.decode(crashInfo);
-            String reason = crashInfoJson["reason"];
-            int status = crashInfoJson["status"];
-            // String description = crashInfoJson["description"];
-            // description/stacktrace fails to send format and sanitize before push
-            await _instance.pushError(type: "crash",  value: " $reason , status: $status");
+          String reason = crashInfoJson["reason"];
+          int status = crashInfoJson["status"];
+          // String description = crashInfoJson["description"];
+          // description/stacktrace fails to send format and sanitize before push
+          await _instance.pushError(
+              type: "crash", value: " $reason , status: $status");
         }
-
       }
     }
   }

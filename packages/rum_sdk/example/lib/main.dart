@@ -11,31 +11,29 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = RumHttpOverrides(HttpOverrides.current);
   await dotenv.load(fileName: ".env");
-  RumFlutter().transports.add(
-      OfflineTransport(maxCacheDuration: const Duration(days: 3))
-  );
-  await RumFlutter().runApp( optionsConfiguration:
-    RumConfig(
-      appName: "example_app",
-      appVersion: "2.0.1",
-      appEnv: "Test",
-      apiKey: "api_key",
-      anrTracking: true,
-      cpuUsageVitals: true,
-      collectorUrl: "http://10.0.2.2:8027/collect",
-      enableCrashReporting: true,
-      memoryUsageVitals: true,
-      refreshRateVitals: true,
-      fetchVitalsInterval: const Duration(seconds: 30),
-    ),
-    appRunner: () async {
-      runApp( DefaultAssetBundle(bundle: RumAssetBundle(), child: const RumUserInteractionWidget(child: MyApp()))
-      );
-    }
-  );
+  RumFlutter()
+      .transports
+      .add(OfflineTransport(maxCacheDuration: const Duration(days: 3)));
+  await RumFlutter().runApp(
+      optionsConfiguration: RumConfig(
+        appName: "example_app",
+        appVersion: "2.0.1",
+        appEnv: "Test",
+        apiKey: dotenv.env['FARO_API_KEY'] ?? '',
+        anrTracking: true,
+        cpuUsageVitals: true,
+        collectorUrl: dotenv.env['FARO_COLLECTOR_URL'] ?? '',
+        enableCrashReporting: true,
+        memoryUsageVitals: true,
+        refreshRateVitals: true,
+        fetchVitalsInterval: const Duration(seconds: 30),
+      ),
+      appRunner: () async {
+        runApp(DefaultAssetBundle(
+            bundle: RumAssetBundle(),
+            child: const RumUserInteractionWidget(child: MyApp())));
+      });
 }
-
-
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -51,68 +49,58 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    setState(() {
-    });
+    setState(() {});
   }
-
-
-
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorObservers: [RumNavigationObserver()],
-      initialRoute: '/',
-      routes: {
-        '/home': (context) => const HomePage(),
-        '/features': (context) => const FeaturesPage()
-      },
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('RUM Test App'),
-        ),
-        body:
-          const HomePage()
-          )
-      );
+        navigatorObservers: [RumNavigationObserver()],
+        initialRoute: '/',
+        routes: {
+          '/home': (context) => const HomePage(),
+          '/features': (context) => const FeaturesPage()
+        },
+        home: Scaffold(
+            appBar: AppBar(
+              title: const Text('RUM Test App'),
+            ),
+            body: const HomePage()));
   }
 }
 
-class HomePage extends StatefulWidget{
+class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
 }
-class _HomePageState extends State<HomePage>{
-  
+
+class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
   }
+
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Center(
-      child:Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Center vertically
-          crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
-        children: [
-          const Image(image: AssetImage("assets/AppHomeImage.png"),),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+            crossAxisAlignment:
+                CrossAxisAlignment.center, // Center horizontally
+            children: [
+          // const Image(image: AssetImage("assets/AppHomeImage.png"),),
           ElevatedButton(
               child: const Text("Change Route"),
-              onPressed:(){
-                Navigator.pushNamed(context,'/features');
-              }
-          ),
-        ]
-      )
-    );
+              onPressed: () {
+                Navigator.pushNamed(context, '/features');
+              }),
+        ]));
   }
-
 }
 
 class _FeaturesPageState extends State<FeaturesPage> {
-
   @override
   void initState() {
     super.initState();
@@ -129,7 +117,6 @@ class _FeaturesPageState extends State<FeaturesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
             ElevatedButton(
               onPressed: () async {
                 final response = await http.post(
@@ -161,33 +148,30 @@ class _FeaturesPageState extends State<FeaturesPage> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final response = await http
-                    .get(Uri.parse('http://10.0.2.2:4000/failpath/'));
+                final response =
+                    await http.get(Uri.parse('http://10.0.2.2:4000/failpath/'));
               },
               child: const Text('HTTP GET Request - fail'),
             ),
-
             ElevatedButton(
               onPressed: () {
-                RumFlutter().pushLog("Custom Log",level: "warn");
+                RumFlutter().pushLog("Custom Log", level: "warn");
               },
               child: const Text('Custom Warn Log'),
             ),
-
             ElevatedButton(
               onPressed: () {
-                RumFlutter().pushMeasurement({'customvalue': 1}, "custom_measurement");
+                RumFlutter()
+                    .pushMeasurement({'customvalue': 1}, "custom_measurement");
               },
               child: const Text('Custom Measurement'),
             ),
-
             ElevatedButton(
               onPressed: () {
                 RumFlutter().pushEvent("custom_event");
               },
               child: const Text('Custom Event'),
             ),
-
             ElevatedButton(
               onPressed: () {
                 setState(() {
@@ -199,7 +183,7 @@ class _FeaturesPageState extends State<FeaturesPage> {
             ElevatedButton(
               onPressed: () {
                 setState(() {
-                  double a = 0/0;
+                  double a = 0 / 0;
                   throw Exception("This is an Exception!");
                 });
               },
@@ -207,13 +191,13 @@ class _FeaturesPageState extends State<FeaturesPage> {
             ),
             ElevatedButton(
               onPressed: () async {
-                RumFlutter().markEventStart("event1","event1_duration");
+                RumFlutter().markEventStart("event1", "event1_duration");
               },
               child: const Text('Mark Event Start'),
             ),
             ElevatedButton(
               onPressed: () async {
-                RumFlutter().markEventEnd("event1","event1_duration");
+                RumFlutter().markEventEnd("event1", "event1_duration");
               },
               child: const Text('Mark Event End'),
             ),
