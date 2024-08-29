@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
+import 'package:rum_sdk/src/data_collection_policy.dart';
 import 'package:rum_sdk/src/transport/rum_base_transport.dart';
 import 'package:rum_sdk/src/transport/task_buffer.dart';
 import 'package:rum_sdk/src/models/payload.dart';
@@ -23,6 +24,11 @@ class RUMTransport extends BaseTransport {
 
   @override
   Future<void> send(Payload payload) async {
+    if (DataCollectionPolicy().isEnabled == false) {
+      log('Data collection is disabled. Skipping sending data.');
+      return;
+    }
+
     final sessionId = this.sessionId;
 
     final headers = {
