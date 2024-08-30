@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 
 import 'package:rum_sdk/rum_native_methods.dart';
 import 'package:rum_sdk/rum_sdk.dart';
+import 'package:rum_sdk/src/data_collection_policy.dart';
 import 'package:rum_sdk/src/transport/batch_transport.dart';
 import 'package:rum_sdk/src/transport/rum_base_transport.dart';
 import 'package:rum_sdk/src/util/generate_session.dart';
@@ -26,6 +27,15 @@ class RumFlutter {
 
   @visibleForTesting
   static set instance(RumFlutter instance) => _instance = instance;
+
+  bool get enableDataCollection => DataCollectionPolicy().isEnabled;
+  set enableDataCollection(bool enable) {
+    if (enable) {
+      DataCollectionPolicy().enable();
+    } else {
+      DataCollectionPolicy().disable();
+    }
+  }
 
   RumConfig? config;
   List<BaseTransport> _transports = [];

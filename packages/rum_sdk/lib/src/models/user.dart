@@ -3,7 +3,7 @@ class User {
   String? username;
   String? email;
 
-  User({this.id,  this.username, this.email});
+  User({this.id, this.username, this.email});
 
   User.fromJson(dynamic json) {
     id = json['id'];
