@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 
@@ -227,26 +228,33 @@ class RumFlutter {
     required String apiKey,
     required String collectorUrl,
   }) async {
-    Map<String, dynamic> metadata = meta.toJson();
-    metadata["app"] = app.toJson();
-    metadata["apiKey"] = apiKey;
-    metadata["collectorUrl"] = collectorUrl;
-    if (Platform.isIOS) {
-      _nativeChannel?.enableCrashReporter(metadata);
-    }
-    if (Platform.isAndroid) {
-      List<String>? crashReports = await _nativeChannel?.getCrashReport();
-      if (crashReports != null) {
-        for (var crashInfo in crashReports) {
-          final crashInfoJson = json.decode(crashInfo);
-          String reason = crashInfoJson["reason"];
-          int status = crashInfoJson["status"];
-          // String description = crashInfoJson["description"];
-          // description/stacktrace fails to send format and sanitize before push
-          await _instance.pushError(
-              type: "crash", value: " $reason , status: $status");
+    try {
+      Map<String, dynamic> metadata = meta.toJson();
+      metadata["app"] = app.toJson();
+      metadata["apiKey"] = apiKey;
+      metadata["collectorUrl"] = collectorUrl;
+      if (Platform.isIOS) {
+        _nativeChannel?.enableCrashReporter(metadata);
+      }
+      if (Platform.isAndroid) {
+        List<String>? crashReports = await _nativeChannel?.getCrashReport();
+        if (crashReports != null) {
+          for (var crashInfo in crashReports) {
+            final crashInfoJson = json.decode(crashInfo);
+            String reason = crashInfoJson["reason"];
+            int status = crashInfoJson["status"];
+            // String description = crashInfoJson["description"];
+            // description/stacktrace fails to send format and sanitize before push
+            await _instance.pushError(
+                type: "crash", value: " $reason , status: $status");
+          }
         }
       }
+    } catch (error, stacktrace) {
+      log(
+        'RumFlutter: enableCrashReporter failed with error: $error',
+        stackTrace: stacktrace,
+      );
     }
   }
 }
