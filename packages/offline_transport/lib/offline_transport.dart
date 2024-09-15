@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -18,7 +19,7 @@ class OfflineTransport extends BaseTransport {
   @override
   Future<void> send(Payload payload) async {
     if (!isOnline) {
-      if(isPayloadEmpty(payload)){
+      if (isPayloadEmpty(payload)) {
         return;
       }
       await writeToFile(payload);
@@ -27,15 +28,18 @@ class OfflineTransport extends BaseTransport {
 
   Future<void> checkConnectivity() async {
     var connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult == ConnectivityResult.none) {
+    if (connectivityResult.firstOrNull == ConnectivityResult.none) {
       isOnline = false;
     } else {
       isOnline = await _isConnectedToInternet();
       readFromFile();
     }
   }
+
   Future<void>? monitorConnectivity() {
-    Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> result) async {
+    Connectivity()
+        .onConnectivityChanged
+        .listen((List<ConnectivityResult> result) async {
       if (result.contains(ConnectivityResult.none)) {
         isOnline = false;
       } else {
@@ -51,7 +55,6 @@ class OfflineTransport extends BaseTransport {
     return null;
   }
 
-
   Future<bool> _isConnectedToInternet() async {
     try {
       final result = await InternetAddress.lookup('example.com');
@@ -61,13 +64,12 @@ class OfflineTransport extends BaseTransport {
     }
   }
 
-  bool isPayloadEmpty(Payload payload){
+  bool isPayloadEmpty(Payload payload) {
     return (payload.events.isEmpty &&
         payload.measurements.isEmpty &&
         payload.logs.isEmpty &&
-        payload.exceptions.isEmpty) ;
+        payload.exceptions.isEmpty);
   }
-
 
   Future<void> writeToFile(Payload payload) async {
     final file = await _getCacheFile();
@@ -83,14 +85,14 @@ class OfflineTransport extends BaseTransport {
     if (!await file.exists()) {
       return;
     }
-    if(file.length() == 0 ){
+    if (await file.length() == 0) {
       return;
     }
 
     final Stream<String> lines = file
         .openRead()
         .transform(utf8.decoder) // Decode bytes to UTF-8.
-        .transform(LineSplitter()); // Convert stream to individual lines.
+        .transform(const LineSplitter()); // Convert stream to individual lines.
 
     final List<String> remainingLines = [];
     final currentTime = DateTime.now().millisecondsSinceEpoch;
@@ -98,16 +100,28 @@ class OfflineTransport extends BaseTransport {
     await for (var line in lines) {
       if (line.trim().isEmpty) continue;
 
-      final logJson = jsonDecode(line);
-      final timestamp = logJson["timestamp"];
-      final payload = Payload.fromJson(logJson["payload"]);
+      int? timestamp;
+      Payload? payload;
+      try {
+        final logJson = jsonDecode(line);
+        timestamp = logJson["timestamp"];
+        payload = Payload.fromJson(logJson["payload"]);
+      } catch (error) {
+        log('Failed to parse log: $line\nWith error: $error');
+      }
+
+      if (timestamp == null || payload == null) {
+        continue;
+      }
 
       if (_maxCacheDuration != null &&
           currentTime - timestamp > _maxCacheDuration!.inMilliseconds) {
         continue;
       } else {
         await sendCachedData(payload);
-      } }
+      }
+    }
+
     if (remainingLines.isEmpty) {
       await file.writeAsString('');
     } else {
@@ -118,21 +132,21 @@ class OfflineTransport extends BaseTransport {
   Future<File> _getCacheFile() async {
     final directory = await getApplicationDocumentsDirectory();
     final filepath = '${directory.path}/rum_log.json';
-    if(!await File(filepath).exists()){
+    if (!await File(filepath).exists()) {
       return File(filepath).create(recursive: true);
     }
     return File(filepath);
   }
 
-  bool cachedDataExists(){
+  bool cachedDataExists() {
     return false;
   }
+
   Future<void> sendCachedData(Payload payload) async {
-    for( var transport in RumFlutter().transports){
-      if(this != transport){
+    for (var transport in RumFlutter().transports) {
+      if (this != transport) {
         transport.send(payload);
       }
-
     }
   }
 }
