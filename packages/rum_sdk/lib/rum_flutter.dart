@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:rum_sdk/rum_native_methods.dart';
 import 'package:rum_sdk/rum_sdk.dart';
 import 'package:rum_sdk/src/data_collection_policy.dart';
+import 'package:rum_sdk/src/models/session_attributes.dart';
 import 'package:rum_sdk/src/transport/batch_transport.dart';
 import 'package:rum_sdk/src/transport/rum_base_transport.dart';
 import 'package:rum_sdk/src/util/generate_session.dart';
@@ -44,11 +45,7 @@ class RumFlutter {
   List<BaseTransport> get transports => _transports;
 
   Meta meta = Meta(
-      session: Session(generateSessionID(), attributes: {
-        "device": Platform.operatingSystem,
-        "device_version": Platform.operatingSystemVersion,
-        "dart_version": Platform.version
-      }),
+      session: Session(generateSessionID()),
       sdk: Sdk("rum-flutter", "1.3.5", []),
       app: App("", "", ""),
       view: ViewMeta("default"));
@@ -75,6 +72,8 @@ class RumFlutter {
   }
 
   Future<void> init({required RumConfig optionsConfiguration}) async {
+    meta.session?.attributes = await SessionAttributes().getAttributes();
+
     _nativeChannel ??= RumNativeMethods();
     config = optionsConfiguration;
     _batchTransport = _batchTransport ??
