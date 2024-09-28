@@ -45,7 +45,7 @@ class RumFlutter {
   List<BaseTransport> get transports => _transports;
 
   Meta meta = Meta(
-      session: Session(generateSessionID()),
+      session: Session(generateSessionID(), attributes: {}),
       sdk: Sdk("rum-flutter", "1.3.5", []),
       app: App("", "", ""),
       view: ViewMeta("default"));

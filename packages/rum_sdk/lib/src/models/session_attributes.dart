@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 
 class SessionAttributes {
-  Future<Map<String, dynamic>> getAttributes() async {
+  Future<Map<String, String>> getAttributes() async {
     final dartVersion = Platform.version;
     String deviceOs = Platform.operatingSystem;
     String deviceOsVersion = Platform.operatingSystemVersion;
@@ -38,7 +38,7 @@ class SessionAttributes {
       deviceIsPhysical = iosInfo.isPhysicalDevice;
     }
 
-    final attributes = <String, dynamic>{
+    final attributes = <String, String>{
       "dart_version": dartVersion,
       "device_os": deviceOs,
       "device_os_version": deviceOsVersion,
@@ -46,7 +46,7 @@ class SessionAttributes {
       "device_manufacturer": deviceManufacturer,
       "device_model": deviceModel,
       "device_brand": deviceBrand,
-      "device_is_physical": deviceIsPhysical,
+      "device_is_physical": '$deviceIsPhysical',
     };
 
     return attributes;
