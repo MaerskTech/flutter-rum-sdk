@@ -23,7 +23,7 @@ class RUMTransport extends BaseTransport {
   }
 
   @override
-  Future<void> send(Payload payload) async {
+  Future<void> send(Map<String, dynamic> payload) async {
     if (DataCollectionPolicy().isEnabled == false) {
       log('Data collection is disabled. Skipping sending data.');
       return;
@@ -40,7 +40,7 @@ class RUMTransport extends BaseTransport {
       return http.post(
         Uri.parse(collectorUrl),
         headers: headers,
-        body: jsonEncode(payload.toJson()),
+        body: jsonEncode(payload),
       );
     });
     if (response != null && response?.statusCode ~/ 100 != 2) {

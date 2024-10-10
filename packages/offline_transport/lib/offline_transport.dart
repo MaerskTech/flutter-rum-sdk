@@ -17,7 +17,8 @@ class OfflineTransport extends BaseTransport {
     monitorConnectivity();
   }
   @override
-  Future<void> send(Payload payload) async {
+  Future<void> send(Map<String,dynamic> data) async {
+    Payload payload = Payload.fromJson(data);
     if (!isOnline) {
       if (isPayloadEmpty(payload)) {
         return;
@@ -145,7 +146,7 @@ class OfflineTransport extends BaseTransport {
   Future<void> sendCachedData(Payload payload) async {
     for (var transport in RumFlutter().transports) {
       if (this != transport) {
-        transport.send(payload);
+        transport.send(payload.toJson());
       }
     }
   }

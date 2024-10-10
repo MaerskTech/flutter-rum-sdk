@@ -22,7 +22,7 @@ class RumConfig {
     required this.appName,
     required this.appEnv,
     required this.apiKey,
-    this.collectorUrl,
+    required this.collectorUrl,
     this.appVersion,
     this.transports,
     this.enableCrashReporting = false,

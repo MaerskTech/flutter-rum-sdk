@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:rum_sdk/rum_native_methods.dart';
 import 'package:rum_sdk/rum_sdk.dart';
@@ -95,11 +96,12 @@ class RumFlutter {
       RumFlutter()._transports.addAll(config?.transports ?? []);
     }
     _instance.ignoreUrls = optionsConfiguration.ignoreUrls ?? [];
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
     _instance.setAppMeta(
         appName: optionsConfiguration.appName,
         appEnv: optionsConfiguration.appEnv,
         appVersion: optionsConfiguration.appVersion == null
-            ? "1.0.0"
+            ? packageInfo.version
             : optionsConfiguration.appVersion!);
     if (config?.enableCrashReporting == true) {
       _instance.enableCrashReporter(

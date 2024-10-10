@@ -1,11 +1,8 @@
 import 'dart:async';
 import 'package:rum_sdk/rum_sdk.dart';
-import 'package:rum_sdk/src/configurations/batch_config.dart';
-import 'package:rum_sdk/src/models/models.dart';
 import 'package:rum_sdk/src/transport/rum_base_transport.dart';
 
 class BatchTransport {
-  int items = 0;
   Payload payload;
   BatchConfig batchConfig;
   List<BaseTransport> transports;
@@ -17,7 +14,8 @@ class BatchTransport {
     if (batchConfig.enabled) {
       Timer.periodic(batchConfig.sendTimeout, (Timer t) {
         flushTimer = t;
-        flush();
+        flush(payload.toJson());
+        resetPayload();
       });
     } else {
       batchConfig.payloadItemLimit = 1;
@@ -26,34 +24,31 @@ class BatchTransport {
 
   Future<void> addEvent(Event event) async {
     payload.events.add(event);
-    items++;
     checkPayloadItemLimit();
   }
 
   Future<void> addMeasurement(Measurement measurement) async {
     payload.measurements.add(measurement);
-    items++;
     checkPayloadItemLimit();
   }
 
   Future<void> addLog(RumLog rumLog) async {
     payload.logs.add(rumLog);
-    items++;
     checkPayloadItemLimit();
   }
 
   Future<void> addExceptions(RumException exception) async {
     payload.exceptions.add(exception);
-    items++;
     checkPayloadItemLimit();
   }
 
   void updatePayloadMeta(Meta meta) {
-    flush();
+    flush(payload.toJson());
+    resetPayload();
     payload.meta = meta;
   }
 
-  Future<void> flush() async {
+  Future<void> flush(Map<String,dynamic> payload)  async {
     if (isPayloadEmpty()) {
       return;
     }
@@ -63,13 +58,12 @@ class BatchTransport {
         await transport.send(payload);
       }
     }
-    resetPayload();
   }
 
   void checkPayloadItemLimit() {
-    if (items >= batchConfig.payloadItemLimit) {
-      items = 0;
-      flush();
+    if (payloadSize() >= batchConfig.payloadItemLimit) {
+      flush(payload.toJson());
+      resetPayload();
     }
   }
 
@@ -82,6 +76,15 @@ class BatchTransport {
         payload.measurements.isEmpty &&
         payload.logs.isEmpty &&
         payload.exceptions.isEmpty);
+  }
+
+  int payloadSize() {
+        return (
+            payload.logs.length + 
+            payload.measurements.length + 
+            payload.events.length + 
+            payload.exceptions.length 
+        );
   }
 
   void resetPayload() {
